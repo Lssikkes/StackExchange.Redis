@@ -385,6 +385,7 @@ namespace StackExchange.Redis.Server
                 rresponse.Recycle();
                 return true;
             }
+
             if (!buffer.IsEmpty && TryParseRequest(ref buffer, out var request))
             {
                 TypedRedisValue response;

@@ -71,6 +71,7 @@ namespace StackExchange.Redis
             if (value is float f) return ToString(f);
             if (value is double d) return ToString(d);
             if (value is EndPoint e) return ToString(e);
+            if (value is ReadOnlySequence<byte> s) return ToString(s);
             return Convert.ToString(value, CultureInfo.InvariantCulture);
         }
 
@@ -263,18 +264,18 @@ namespace StackExchange.Redis
             return new DnsEndPoint(addressPart, port ?? 0);
         }
 
-        internal static string GetString(ReadOnlySequence<byte> buffer)
+        internal static string ToString(ReadOnlySequence<byte> buffer)
         {
-            if (buffer.IsSingleSegment) return GetString(buffer.First.Span);
+            if (buffer.IsSingleSegment) return ToString(buffer.First.Span);
 
             var arr = ArrayPool<byte>.Shared.Rent(checked((int)buffer.Length));
             var span = new Span<byte>(arr, 0, (int)buffer.Length);
             buffer.CopyTo(span);
-            string s = GetString(span);
+            string s = ToString(span);
             ArrayPool<byte>.Shared.Return(arr);
             return s;
         }
-        internal static unsafe string GetString(ReadOnlySpan<byte> span)
+        internal static unsafe string ToString(ReadOnlySpan<byte> span)
         {
             fixed (byte* ptr = &MemoryMarshal.GetReference(span))
             {

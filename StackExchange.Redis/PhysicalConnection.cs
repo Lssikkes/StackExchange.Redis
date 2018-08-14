@@ -103,7 +103,7 @@ namespace StackExchange.Redis
                     var x = VolatileSocket;
                     if (x == null)
                     {
-                        awaitable.TryComplete(0, SocketError.ConnectionAborted);
+                        awaitable.TryComplete(0, SocketError.ConnectionAborted, true);
                     }
                     else if (x.ConnectAsync(_socketArgs))
                     {   // asynchronous operation is pending
@@ -193,7 +193,7 @@ namespace StackExchange.Redis
                 try
                 {
                     var a = (SocketAsyncEventArgs)state;
-                    if (((SocketAwaitable)a.UserToken).TryComplete(0, SocketError.TimedOut))
+                    if (((SocketAwaitable)a.UserToken).TryComplete(0, SocketError.TimedOut, true))
                     {
                         Socket.CancelConnectAsync(a);
                     }
@@ -1296,6 +1296,10 @@ namespace StackExchange.Redis
 
         partial void OnWrapForLogging(ref IDuplexPipe pipe, string name, SocketManager mgr);
 
+        private string GetEverything()
+        {
+            return (_ioPipe as SocketConnection)?.SnapshotReceivedSoFar();
+        }
         private async void ReadFromPipe() // yes it is an async void; deal with it!
         {
             bool allowSyncRead = true, isReading = false;
@@ -1365,6 +1369,8 @@ namespace StackExchange.Redis
         {
             int messageCount = 0;
 
+            string original = Format.ToString((object)buffer);
+            bool isSingle = buffer.IsSingleSegment;
             while (!buffer.IsEmpty)
             {
                 var reader = new BufferReader(buffer);
@@ -1514,7 +1520,7 @@ namespace StackExchange.Redis
                     reader.Consume(1);
                     return ReadArray(in buffer, ref reader, includeDetilInExceptions, server);
                 default:
-                    // string s = Format.GetString(buffer);
+                    string s = Format.ToString(buffer);
                     if (allowInlineProtocol) return ParseInlineProtocol(ReadLineTerminatedString(ResultType.SimpleString, ref reader));
                     throw new InvalidOperationException("Unexpected response prefix: " + (char)prefix);
             }
